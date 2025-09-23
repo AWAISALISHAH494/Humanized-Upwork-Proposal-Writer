@@ -38,7 +38,7 @@ class SkillExtractor:
 	def extract(self, text: str, top_k: int = 20) -> List[str]:
 		tokens = self._normalize(text)
 		keywords = set(t for t in tokens if t in (self.custom_keywords or DEFAULT_SKILL_KEYWORDS))
-		# capture bigrams like "machine learning", "data science"
+		
 		joined = " ".join(tokens)
 		for phrase in [
 			"machine learning", "data science", "natural language", "deep learning",
