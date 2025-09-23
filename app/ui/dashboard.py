@@ -5,11 +5,14 @@ from typing import Optional
 
 import streamlit as st
 from rich.console import Console
+import re
+import html as _html
 
 from app.models.job_description import JobDescription
 from app.nlp.skill_extractor import SkillExtractor
 from app.data.experience_manager import ExperienceManager
 from app.ai.openai_provider import OpenAIProvider
+from app.ai.gemini_provider import GeminiProvider
 from app.generation.template_manager import TemplateManager
 from app.generation.proposal_generator import ProposalGenerator
 
@@ -43,6 +46,7 @@ class Dashboard:
 
 		with st.sidebar:
 			st.header("Options")
+			provider_name = st.selectbox("AI provider", ["OpenAI", "Gemini"], index=0)
 			style = st.selectbox("Proposal style", ["friendly", "formal", "concise"], index=1)
 			include_pricing = st.checkbox("Suggest pricing/delivery", value=True)
 			temperature = st.slider("Creativity (lower is more professional)", 0.0, 1.2, 0.5, 0.05)
@@ -70,7 +74,23 @@ class Dashboard:
 		st.text_area("Job description", height=260, placeholder="Paste the Upwork job description here...", key="job_text")
 		job_text = st.session_state.get("job_text", "")
 
+		# Keyword highlighting preview
+		skills = self.generator.skill_extractor.extract(job_text) if job_text.strip() else []
+		if skills:
+			st.caption("Highlighted keywords detected in your job description:")
+			pattern = r"(" + "|".join(sorted(map(re.escape, skills), key=len, reverse=True)) + r")"
+			def _hl(m: re.Match[str]) -> str:
+				return f"<mark>{_html.escape(m.group(0))}</mark>"
+			html_text = re.sub(pattern, _hl, _html.escape(job_text), flags=re.IGNORECASE)
+			st.markdown(f"<div style='padding:8px;border:1px solid #ddd;border-radius:6px;max-height:220px;overflow:auto'>{html_text}</div>", unsafe_allow_html=True)
+
 		proposal_text: Optional[str] = st.session_state.get("proposal_text")
+
+		# Switch provider dynamically before generation
+		if provider_name == "OpenAI":
+			self.generator.ai_provider = OpenAIProvider()
+		else:
+			self.generator.ai_provider = GeminiProvider()
 
 		if generate_clicked and job_text.strip():
 			job = JobDescription(raw_text=job_text)
