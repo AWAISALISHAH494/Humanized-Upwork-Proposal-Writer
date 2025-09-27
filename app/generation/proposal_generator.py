@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 from app.models.job_description import JobDescription
+from app.models.user_profile import UserProfile
 from app.nlp.skill_extractor import SkillExtractor
 from app.data.experience_manager import ExperienceManager
 from app.ai.provider_base import AIProvider
@@ -24,6 +25,7 @@ class ProposalGenerator:
 		include_pricing: bool = True,
 		temperature: float = 0.5,
 		max_tokens: int = 1200,
+		user: Optional[UserProfile] = None,
 	) -> str:
 		self.template_manager.style = style
 		skills = self.skill_extractor.extract(job.cleaned_text(), top_k=20)
@@ -37,5 +39,7 @@ class ProposalGenerator:
 			include_pricing=include_pricing,
 			temperature=temperature,
 			max_tokens=max_tokens,
+			user_profile=(user.summary() if user else None),
 		)
-		return prefix + body + f"\n{self.template_manager.closing()}\n" 
+		closing_name = f" {user.name}" if user and user.name else ""
+		return prefix + body + f"\n{self.template_manager.closing()}{closing_name}\n" 

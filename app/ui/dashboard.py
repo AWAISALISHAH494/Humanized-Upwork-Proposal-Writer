@@ -9,6 +9,7 @@ import re
 import html as _html
 
 from app.models.job_description import JobDescription
+from app.models.user_profile import UserProfile
 from app.nlp.skill_extractor import SkillExtractor
 from app.data.experience_manager import ExperienceManager
 from app.ai.openai_provider import OpenAIProvider
@@ -51,6 +52,16 @@ class Dashboard:
 			include_pricing = st.checkbox("Suggest pricing/delivery", value=True)
 			temperature = st.slider("Creativity (lower is more professional)", 0.0, 1.2, 0.5, 0.05)
 			max_tokens = st.slider("Max tokens (length)", 400, 1600, 1200, 50)
+			st.divider()
+			st.subheader("Your details")
+			name = st.text_input("Your name", value=st.session_state.get("profile_name", ""))
+			role = st.text_input("Your role/title", value=st.session_state.get("profile_role", ""))
+			years = st.number_input("Years of experience", min_value=0, max_value=60, value=int(st.session_state.get("profile_years", 0)))
+			quals = st.text_input("Qualifications (degrees/certs/highlights)", value=st.session_state.get("profile_quals", ""))
+			st.session_state["profile_name"] = name
+			st.session_state["profile_role"] = role
+			st.session_state["profile_years"] = years
+			st.session_state["profile_quals"] = quals
 
 		col1, col2, col3 = st.columns([1, 1, 1])
 		with col1:
@@ -94,9 +105,10 @@ class Dashboard:
 
 		if generate_clicked and job_text.strip():
 			job = JobDescription(raw_text=job_text)
+			user = UserProfile(name=name or None, role=role or None, years_experience=int(years) if years else None, qualifications=quals or None)
 			with st.spinner("Generating proposal..."):
 				try:
-					proposal_text = self.generator.generate(job, style=style, include_pricing=include_pricing, temperature=temperature, max_tokens=max_tokens)
+					proposal_text = self.generator.generate(job, style=style, include_pricing=include_pricing, temperature=temperature, max_tokens=max_tokens, user=user)
 					st.session_state["proposal_text"] = proposal_text
 				except Exception as e:
 					console.print(f"[red]Generation error:[/red] {e}")

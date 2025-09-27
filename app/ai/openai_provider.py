@@ -73,17 +73,25 @@ class OpenAIProvider(AIProvider):
 		temperature: float = 0.5,
 		max_tokens: int = 1200,
 		model: Optional[str] = None,
+		user_profile: Optional[str] = None,
 	) -> str:
 		if not self.client:
 			return self._fallback(job_text, skills, projects, style, include_pricing)
 		project_list = "\n".join(
 			f"- {p.get('title','Project')}: {p.get('description','')} (Tech: {p.get('tech','')}) — {p.get('impact','')}" for p in projects
 		)
+		profile_block = f"About the proposer: {user_profile}\n\n" if user_profile else ""
+		repetition_guidance = (
+			"Vary phrasing and sentence structure from typical outputs. Prefer concrete details and diverse transitional phrases. "
+			"Avoid repeating the same wording or section ordering verbatim across runs."
+		)
 		prompt = (
 			"Write a professional, detailed Upwork proposal body. Do NOT include any greeting or sign-off; those will be added outside.\n"
 			"Use clear section headings and bullet points where helpful.\n"
 			"Length: aim for 400–700 words if content warrants it.\n"
-			f"Style: {style}. Maintain a confident, client-focused tone.\n\n"
+			f"Style: {style}. Maintain a confident, client-focused tone.\n"
+			f"{repetition_guidance}\n\n"
+			f"{profile_block}"
 			"Include these sections (adapt as needed):\n"
 			"1) Understanding & goals (reflect the job description)\n"
 			"2) Relevant expertise (skills + 2–3 concrete project highlights)\n"

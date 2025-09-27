@@ -16,5 +16,6 @@ class AIProvider(ABC):
 		temperature: float = 0.7,
 		max_tokens: int = 800,
 		model: Optional[str] = None,
+		user_profile: Optional[str] = None,
 	) -> str:
 		... 
